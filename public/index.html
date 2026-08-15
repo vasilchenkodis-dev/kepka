@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>kepka</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0e0f13;
+    --panel: #17191f;
+    --panel-2: #1e2029;
+    --border: #2a2d38;
+    --text: #e9e8e6;
+    --muted: #8b8e9c;
+    --red: #e0303d;
+    --red-dim: #a92531;
+    --red-glow: rgba(224,48,61,0.35);
+    --amber: #ff8a4c;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height:100vh;
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(224,48,61,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 100% 0%, rgba(255,138,76,0.06), transparent 60%);
+  }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  h1,h2,h3,.display{ font-family:'Oswald', sans-serif; text-transform:uppercase; letter-spacing:0.02em; }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; cursor:pointer; border:none; }
+  ::selection{ background: var(--red-glow); }
+
+  /* ---- Top bar ---- */
+  header{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; gap:16px;
+    padding:14px 68px 14px 24px;
+    background: rgba(14,15,19,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom:1px solid var(--border);
+    flex-wrap:wrap;
+    position:relative;
+  }
+  .logo{
+    font-family:'Oswald', sans-serif; font-weight:700; font-size:22px;
+    letter-spacing:0.04em; color:var(--text); white-space:nowrap;
+    display:flex; align-items:center; gap:8px; cursor:pointer;
+  }
+  .logo .dot{ width:10px; height:10px; border-radius:2px; background:var(--red); box-shadow:0 0 12px var(--red-glow); }
+  .search-wrap{ flex:1; min-width:180px; position:relative; }
+  .search-wrap input{
+    width:100%; background:var(--panel); border:1px solid var(--border);
+    color:var(--text); padding:10px 14px 10px 38px; border-radius:8px; font-size:14px;
+    outline:none; transition:border-color .15s;
+  }
+  .search-wrap input:focus{ border-color: var(--red); }
+  .search-wrap svg{ position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; stroke:var(--muted); }
+  .navbtn{
+    background:var(--panel); border:1px solid var(--border); color:var(--text);
+    padding:10px 16px; border-radius:8px; font-size:13px; font-weight:600;
+    display:flex; align-items:center; gap:6px; white-space:nowrap; transition: all .15s;
+  }
+  .navbtn:hover{ border-color: var(--red); color:#fff; }
+
+  /* ---- Admin corner button ---- */
+  .admin-corner{
+    position:fixed; top:14px; right:20px; z-index:80;
+    width:42px; height:42px; border-radius:50%;
+    background:var(--panel-2); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    transition: all .15s; box-shadow:0 4px 14px rgba(0,0,0,0.4);
+  }
+  .admin-corner:hover{ border-color:var(--red); box-shadow:0 4px 18px var(--red-glow); }
+  .admin-corner svg{ width:18px; height:18px; stroke:var(--muted); }
+  .admin-corner:hover svg{ stroke:var(--red); }
+  .admin-corner.unlocked{ border-color:#3fb95f; }
+  .admin-corner.unlocked svg{ stroke:#3fb95f; }
+
+  /* ---- Panels (genres / settings) ---- */
+  .dropdown{ position:relative; }
+  .panel{
+    position:absolute; top:calc(100% + 8px); right:0; min-width:260px;
+    background:var(--panel-2); border:1px solid var(--border); border-radius:10px;
+    padding:14px; box-shadow:0 12px 32px rgba(0,0,0,0.5); z-index:60; display:none;
+  }
+  .panel.open{ display:block; }
+  .panel h4{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px; font-family:'Inter'; font-weight:600; }
+  .panel h4:not(:first-child){ margin-top:16px; }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    padding:6px 12px; border-radius:20px; border:1px solid var(--border); background:var(--panel);
+    font-size:12.5px; color:var(--muted); transition: all .15s;
+  }
+  .chip:hover{ border-color: var(--red); color:var(--text); }
+  .chip.on{ background:var(--red); border-color:var(--red); color:#fff; }
+  .radio-row{ display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
+  .radio-row label{ display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer; color:var(--text); }
+  .radio-row input{ accent-color:var(--red); }
+  .empty-genres{ font-size:12.5px; color:var(--muted); }
+
+  /* ---- Layout ---- */
+  main{ max-width:1280px; margin:0 auto; padding:28px 24px 80px; }
+  .page-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+  .page-head h1{ font-size:26px; }
+  .count-tag{ font-size:12px; color:var(--muted); }
+
+  /* ---- Grid / Cards ---- */
+  .grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(190px,1fr)); gap:18px;
+  }
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden;
+    display:flex; flex-direction:column; transition: transform .15s, border-color .15s;
+  }
+  .card:hover{ transform:translateY(-3px); border-color: var(--red-dim); }
+  .cover{ width:100%; aspect-ratio:3/4; background:var(--panel-2) center/cover no-repeat; position:relative; }
+  .cover .rank{
+    position:absolute; top:8px; left:8px; background:rgba(14,15,19,0.85); border:1px solid var(--border);
+    color:var(--amber); font-size:11px; padding:2px 7px; border-radius:5px; font-family:'JetBrains Mono';
+  }
+  .card-body{ padding:12px; display:flex; flex-direction:column; gap:6px; flex:1; }
+  .card-body .name{ font-size:14px; font-weight:600; line-height:1.25; }
+  .tag-row{ display:flex; flex-wrap:wrap; gap:5px; }
+  .tag{ font-size:10.5px; color:var(--muted); border:1px solid var(--border); padding:2px 7px; border-radius:5px; font-family:'JetBrains Mono'; }
+  .weight-line{ margin-top:auto; display:flex; align-items:center; justify-content:space-between; font-size:11.5px; color:var(--muted); font-family:'JetBrains Mono'; }
+  .weight-bar{ height:3px; border-radius:2px; background:var(--border); margin-top:4px; overflow:hidden; }
+  .weight-bar span{ display:block; height:100%; background:var(--red); }
+
+  /* ---- Empty state ---- */
+  .empty-state{
+    border:1px dashed var(--border); border-radius:12px; padding:64px 24px; text-align:center; color:var(--muted);
+  }
+  .empty-state .display{ font-size:20px; color:var(--text); margin-bottom:8px; }
+
+  /* ---- Detail page ---- */
+  .detail{ display:grid; grid-template-columns:320px 1fr; gap:32px; }
+  .detail .cover{ border-radius:12px; border:1px solid var(--border); aspect-ratio:3/4; }
+  .detail-info h1{ font-size:32px; margin-bottom:10px; }
+  .detail-info .desc{ color:var(--muted); line-height:1.65; margin:16px 0 22px; max-width:620px; font-size:14.5px; }
+  .meta-grid{ display:flex; gap:28px; flex-wrap:wrap; margin:18px 0; }
+  .meta-item .label{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px; }
+  .meta-item .value{ font-family:'JetBrains Mono'; font-size:15px; }
+  .action-row{ display:flex; align-items:center; gap:14px; margin-top:22px; flex-wrap:wrap; }
+  .vote-btn{
+    background:var(--panel); border:1px solid var(--border); color:var(--text); padding:10px 16px; border-radius:8px;
+    display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; transition:all .15s;
+  }
+  .vote-btn:hover{ border-color:var(--red); }
+  .vote-btn.active-like{ border-color:#3fb95f; color:#3fb95f; background:rgba(63,185,95,0.08); }
+  .vote-btn.active-dislike{ border-color:var(--red); color:var(--red); background:rgba(224,48,61,0.08); }
+  .dl-btn{
+    background:var(--red); color:#fff; padding:12px 22px; border-radius:8px; font-weight:700; font-size:14px;
+    display:flex; align-items:center; gap:8px; box-shadow:0 6px 20px var(--red-glow); transition:all .15s;
+  }
+  .dl-btn:hover{ background:var(--red-dim); transform:translateY(-1px); }
+  .dl-btn[disabled]{ opacity:0.4; pointer-events:none; }
+  .back-link{ display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:13px; margin-bottom:20px; }
+  .back-link:hover{ color:var(--text); }
+
+  /* ---- Admin ---- */
+  .admin-grid{ display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:start; }
+  .form-card{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:24px; }
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
+  .field input[type=text], .field input[type=number], .field input[type=url], .field input[type=password], .field textarea{
+    width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    padding:10px 12px; border-radius:7px; font-size:14px; outline:none; font-family:inherit;
+  }
+  .field input:focus, .field textarea:focus{ border-color:var(--red); }
+  .field textarea{ resize:vertical; min-height:80px; }
+  .platform-grid{ display:flex; flex-wrap:wrap; gap:8px; }
+  .platform-grid label{
+    display:flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--panel-2);
+    padding:7px 12px; border-radius:7px; font-size:13px; cursor:pointer; text-transform:none; color:var(--text);
+  }
+  .platform-grid input{ accent-color:var(--red); }
+  .submit-btn{
+    background:var(--red); color:#fff; padding:12px 20px; border-radius:8px; font-weight:700; font-size:14px; width:100%;
+    margin-top:6px;
+  }
+  .submit-btn:hover{ background:var(--red-dim); }
+  .admin-list{ display:flex; flex-direction:column; gap:10px; }
+  .admin-row{
+    display:flex; align-items:center; gap:12px; background:var(--panel); border:1px solid var(--border);
+    border-radius:8px; padding:10px 12px;
+  }
+  .admin-row img{ width:40px; height:52px; object-fit:cover; border-radius:4px; background:var(--panel-2); }
+  .admin-row .r-name{ font-size:13.5px; font-weight:600; }
+  .admin-row .r-meta{ font-size:11.5px; color:var(--muted); font-family:'JetBrains Mono'; }
+  .del-btn{ margin-left:auto; background:transparent; color:var(--muted); border:1px solid var(--border); padding:6px 10px; border-radius:6px; font-size:12px; }
+  .del-btn:hover{ color:var(--red); border-color:var(--red); }
+  .hint{ font-size:12px; color:var(--muted); margin-top:4px; }
+  .pw-card{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:24px; }
+  .pw-row{ display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+  .pw-row .field{ margin-bottom:0; flex:1; min-width:180px; }
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--panel-2);
+    border:1px solid var(--red); color:var(--text); padding:10px 18px; border-radius:8px; font-size:13px;
+    z-index:100; opacity:0; pointer-events:none; transition:opacity .25s, transform .25s;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
+
+  /* ---- Modal ---- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(8,9,12,0.75); backdrop-filter:blur(3px);
+    display:flex; align-items:center; justify-content:center; z-index:90;
+  }
+  .modal-box{
+    background:var(--panel-2); border:1px solid var(--border); border-radius:14px; padding:26px;
+    width:320px; max-width:90vw; box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  }
+  .modal-box h3{ font-size:17px; margin-bottom:6px; }
+  .modal-box p.sub{ font-size:12.5px; color:var(--muted); margin-bottom:16px; }
+  .modal-box input[type=password]{
+    width:100%; background:var(--panel); border:1px solid var(--border); color:var(--text);
+    padding:11px 12px; border-radius:8px; font-size:14px; outline:none; margin-bottom:10px;
+  }
+  .modal-box input[type=password]:focus{ border-color:var(--red); }
+  .modal-actions{ display:flex; gap:10px; margin-top:12px; }
+  .modal-actions button{ flex:1; padding:10px; border-radius:8px; font-size:13px; font-weight:600; }
+  .modal-actions .cancel{ background:var(--panel); border:1px solid var(--border); color:var(--text); }
+  .modal-actions .confirm{ background:var(--red); color:#fff; }
+  .modal-err{ font-size:12px; color:var(--red); min-height:16px; margin-top:-2px; margin-bottom:8px; }
+
+  @media (max-width: 720px){
+    .detail{ grid-template-columns:1fr; }
+    .admin-grid{ grid-template-columns:1fr; }
+    header{ gap:10px; padding-right:64px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" id="logoHome"><span class="dot"></span>kepka</div>
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input type="text" id="searchInput" placeholder="">
+  </div>
+
+  <div class="dropdown" id="genreDropdown">
+    <button class="navbtn" id="genreBtn">🎭 <span id="genreBtnLabel"></span><span id="genreCountTag"></span></button>
+    <div class="panel" id="genrePanel">
+      <h4 id="genreHeading"></h4>
+      <div class="chips" id="genreChips"></div>
+    </div>
+  </div>
+
+  <div class="dropdown" id="settingsDropdown">
+    <button class="navbtn" id="settingsBtn">⚙ <span id="settingsBtnLabel"></span></button>
+    <div class="panel" id="settingsPanel">
+      <h4 id="sortHeading"></h4>
+      <div class="radio-row" id="sortRadios"></div>
+      <h4 id="langHeading"></h4>
+      <div class="chips" id="langChips"></div>
+    </div>
+  </div>
+</header>
+
+<button class="admin-corner" id="adminCorner" title="Admin">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+</button>
+
+<main id="mainArea"></main>
+
+<div class="toast" id="toast"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* ============ i18n ============ */
+const I18N = {
+  uk: {
+    searchPlaceholder: "Пошук за назвою…",
+    genresBtn: "Жанри",
+    genreHeading: "Фільтр за жанром",
+    noGenres: "Жанрів поки немає",
+    resetGenre: "✕ Скинути",
+    settingsBtn: "Налаштування",
+    sortHeading: "Сортування",
+    sortPopular: "Популярні (лайки)",
+    sortWeightDesc: "За вагою (спадання)",
+    sortWeightAsc: "За вагою (зростання)",
+    langHeading: "Мова",
+    catalogTitle: "Каталог ігор",
+    shownTop: n => `Показано 20 найпопулярніших ігор із ${n}`,
+    emptyTitle: "Поки що порожньо",
+    emptyDesc: "Ігри ще не завантажені. Додайте першу гру в адмін-панелі.",
+    notFoundTitle: "Нічого не знайдено",
+    notFoundDesc: "Спробуйте змінити пошуковий запит або жанр.",
+    backHome: "← На головну",
+    weightLabel: "Вага",
+    platformsLabel: "Платформи",
+    downloadBtn: "⬇ Завантажити",
+    noDownloadHint: "Пряме посилання для завантаження ще не додане.",
+    descNone: "Опис відсутній.",
+    adminTitle: "Адмін-панель",
+    addGame: "Додати гру",
+    nameLabel: "Назва",
+    namePh: "Наприклад, Elden Ring",
+    weightGbLabel: "Вага (GB)",
+    genresCommaLabel: "Жанри (через кому)",
+    genresPh: "RPG, Action, Souls-like",
+    platformsFieldLabel: "Платформи",
+    photoUrlLabel: "Посилання на фото (URL)",
+    downloadLinkLabel: "Пряме посилання для завантаження",
+    descriptionLabel: "Опис",
+    descPh: "Короткий опис гри…",
+    submitAdd: "Додати гру",
+    existingGames: n => `Наявні ігри (${n})`,
+    emptyList: "Список порожній.",
+    deleteBtn: "Видалити",
+    toastSaved: "Не вдалося зберегти дані",
+    toastAddedGame: "Гру додано",
+    toastEnterName: "Вкажіть назву гри",
+    loading: "Завантаження…",
+    pwSectionTitle: "Пароль адмін-панелі",
+    pwNew: "Новий пароль",
+    pwChangeBtn: "Змінити пароль",
+    pwChanged: "Пароль змінено",
+    pwEmpty: "Введіть новий пароль",
+    modalTitle: "Вхід в адмін-панель",
+    modalSub: "Введіть пароль, щоб керувати каталогом.",
+    modalPh: "Пароль",
+    modalConfirm: "Увійти",
+    modalCancel: "Скасувати",
+    modalWrong: "Невірний пароль",
+    logoutBtn: "Вийти"
+  },
+  ru: {
+    searchPlaceholder: "Поиск по названию…",
+    genresBtn: "Жанры",
+    genreHeading: "Фильтр по жанру",
+    noGenres: "Жанров пока нет",
+    resetGenre: "✕ Сбросить",
+    settingsBtn: "Настройки",
+    sortHeading: "Сортировка",
+    sortPopular: "Популярные (лайки)",
+    sortWeightDesc: "По весу (убывание)",
+    sortWeightAsc: "По весу (возрастание)",
+    langHeading: "Язык",
+    catalogTitle: "Каталог игр",
+    shownTop: n => `Показаны 20 самых популярных игр из ${n}`,
+    emptyTitle: "Пока пусто",
+    emptyDesc: "Игры ещё не загружены. Добавьте первую игру в админ-панели.",
+    notFoundTitle: "Ничего не найдено",
+    notFoundDesc: "Попробуйте изменить поисковый запрос или жанр.",
+    backHome: "← На главную",
+    weightLabel: "Вес",
+    platformsLabel: "Платформы",
+    downloadBtn: "⬇ Скачать",
+    noDownloadHint: "Прямая ссылка для скачивания ещё не добавлена.",
+    descNone: "Описание отсутствует.",
+    adminTitle: "Админ-панель",
+    addGame: "Добавить игру",
+    nameLabel: "Название",
+    namePh: "Например, Elden Ring",
+    weightGbLabel: "Вес (GB)",
+    genresCommaLabel: "Жанры (через запятую)",
+    genresPh: "RPG, Action, Souls-like",
+    platformsFieldLabel: "Платформы",
+    photoUrlLabel: "Ссылка на фото (URL)",
+    downloadLinkLabel: "Прямая ссылка для скачивания",
+    descriptionLabel: "Описание",
+    descPh: "Краткое описание игры…",
+    submitAdd: "Добавить игру",
+    existingGames: n => `Имеющиеся игры (${n})`,
+    emptyList: "Список пуст.",
+    deleteBtn: "Удалить",
+    toastSaved: "Не удалось сохранить данные",
+    toastAddedGame: "Игра добавлена",
+    toastEnterName: "Укажите название игры",
+    loading: "Загрузка…",
+    pwSectionTitle: "Пароль админ-панели",
+    pwNew: "Новый пароль",
+    pwChangeBtn: "Сменить пароль",
+    pwChanged: "Пароль изменён",
+    pwEmpty: "Введите новый пароль",
+    modalTitle: "Вход в админ-панель",
+    modalSub: "Введите пароль, чтобы управлять каталогом.",
+    modalPh: "Пароль",
+    modalConfirm: "Войти",
+    modalCancel: "Отмена",
+    modalWrong: "Неверный пароль",
+    logoutBtn: "Выйти"
+  },
+  en: {
+    searchPlaceholder: "Search by title…",
+    genresBtn: "Genres",
+    genreHeading: "Filter by genre",
+    noGenres: "No genres yet",
+    resetGenre: "✕ Clear",
+    settingsBtn: "Settings",
+    sortHeading: "Sort by",
+    sortPopular: "Popular (likes)",
+    sortWeightDesc: "Size (largest first)",
+    sortWeightAsc: "Size (smallest first)",
+    langHeading: "Language",
+    catalogTitle: "Game catalog",
+    shownTop: n => `Showing the 20 most popular games out of ${n}`,
+    emptyTitle: "Nothing here yet",
+    emptyDesc: "No games uploaded yet. Add the first one from the admin panel.",
+    notFoundTitle: "No results",
+    notFoundDesc: "Try a different search term or genre.",
+    backHome: "← Back to home",
+    weightLabel: "Size",
+    platformsLabel: "Platforms",
+    downloadBtn: "⬇ Download",
+    noDownloadHint: "No direct download link added yet.",
+    descNone: "No description.",
+    adminTitle: "Admin panel",
+    addGame: "Add a game",
+    nameLabel: "Title",
+    namePh: "e.g. Elden Ring",
+    weightGbLabel: "Size (GB)",
+    genresCommaLabel: "Genres (comma-separated)",
+    genresPh: "RPG, Action, Souls-like",
+    platformsFieldLabel: "Platforms",
+    photoUrlLabel: "Cover image URL",
+    downloadLinkLabel: "Direct download link",
+    descriptionLabel: "Description",
+    descPh: "Short description of the game…",
+    submitAdd: "Add game",
+    existingGames: n => `Existing games (${n})`,
+    emptyList: "List is empty.",
+    deleteBtn: "Delete",
+    toastSaved: "Could not save data",
+    toastAddedGame: "Game added",
+    toastEnterName: "Enter a game title",
+    loading: "Loading…",
+    pwSectionTitle: "Admin panel password",
+    pwNew: "New password",
+    pwChangeBtn: "Change password",
+    pwChanged: "Password changed",
+    pwEmpty: "Enter a new password",
+    modalTitle: "Admin sign-in",
+    modalSub: "Enter the password to manage the catalog.",
+    modalPh: "Password",
+    modalConfirm: "Sign in",
+    modalCancel: "Cancel",
+    modalWrong: "Wrong password",
+    logoutBtn: "Log out"
+  }
+};
+function t(key, ...args){
+  const dict = I18N[state.lang] || I18N.uk;
+  const val = dict[key];
+  if(typeof val === 'function') return val(...args);
+  return val != null ? val : key;
+}
+
+const PLATFORMS = ["PC","PlayStation","Xbox","Switch","Android","iOS","Mac","Linux"];
+let games = [];
+let state = {
+  view: 'home', // home | detail | admin
+  detailId: null,
+  search: '',
+  genreFilter: null,
+  sortMode: 'popular',
+  lang: localStorage.getItem('lang-pref') && I18N[localStorage.getItem('lang-pref')] ? localStorage.getItem('lang-pref') : 'uk',
+  adminAuthed: false,
+  adminPw: null,   // held in memory only for this browser tab/session
+  myVotes: {}       // gameId -> 'like' | 'dislike', this browser's votes
+};
+
+// Stable anonymous identifier for this browser, used server-side to allow exactly one vote per person per game.
+function getVoterId(){
+  let id = localStorage.getItem('voter-id');
+  if(!id){
+    id = 'v_' + (crypto.randomUUID ? crypto.randomUUID() : (Date.now()+'_'+Math.random().toString(36).slice(2)));
+    localStorage.setItem('voter-id', id);
+  }
+  return id;
+}
+const VOTER_ID = getVoterId();
+
+const mainArea = document.getElementById('mainArea');
+const toastEl = document.getElementById('toast');
+const modalRoot = document.getElementById('modalRoot');
+
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(()=>toastEl.classList.remove('show'), 2200);
+}
+
+async function apiGet(url){
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('request failed');
+  return res.json();
+}
+async function apiSend(url, method, body, adminAuth){
+  const headers = { 'Content-Type': 'application/json' };
+  if(adminAuth) headers['x-admin-password'] = state.adminPw || '';
+  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const data = await res.json().catch(()=> ({}));
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function loadGames(){
+  try{ games = await apiGet('/api/games'); }
+  catch(e){ games = []; toast(t('toastSaved')); }
+}
+async function loadMyVotes(){
+  try{ state.myVotes = await apiGet('/api/votes/' + VOTER_ID); }
+  catch(e){ state.myVotes = {}; }
+}
+function saveLangPref(){
+  localStorage.setItem('lang-pref', state.lang);
+}
+async function adminLogin(password){
+  const r = await apiSend('/api/admin/login', 'POST', { password });
+  return r.ok;
+}
+async function setAdminPassword(newPassword){
+  const r = await apiSend('/api/admin/password', 'POST', { newPassword }, true);
+  return r.ok;
+}
+
+function score(g){ return (g.likes||0) - (g.dislikes||0); }
+function uniqueGenres(){
+  const set = new Set();
+  games.forEach(g => (g.genres||[]).forEach(x => set.add(x)));
+  return Array.from(set).sort();
+}
+function filteredSortedGames(){
+  let list = games.slice();
+  if(state.search.trim()){
+    const q = state.search.trim().toLowerCase();
+    list = list.filter(g => g.name.toLowerCase().includes(q));
+  }
+  if(state.genreFilter){
+    list = list.filter(g => (g.genres||[]).includes(state.genreFilter));
+  }
+  if(state.sortMode === 'popular'){ list.sort((a,b)=> score(b) - score(a)); }
+  else if(state.sortMode === 'weight_desc'){ list.sort((a,b)=> (b.weight||0) - (a.weight||0)); }
+  else if(state.sortMode === 'weight_asc'){ list.sort((a,b)=> (a.weight||0) - (b.weight||0)); }
+  return list.slice(0, 20);
+}
+function esc(s){ const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+
+/* ---------- Header (static labels re-rendered on lang change) ---------- */
+function renderHeaderLabels(){
+  document.getElementById('searchInput').placeholder = t('searchPlaceholder');
+  document.getElementById('genreBtnLabel').textContent = t('genresBtn');
+  document.getElementById('genreHeading').textContent = t('genreHeading');
+  document.getElementById('settingsBtnLabel').textContent = t('settingsBtn');
+  document.getElementById('sortHeading').textContent = t('sortHeading');
+  document.getElementById('langHeading').textContent = t('langHeading');
+
+  document.getElementById('sortRadios').innerHTML = `
+    <label><input type="radio" name="sortmode" value="popular" ${state.sortMode==='popular'?'checked':''}> ${t('sortPopular')}</label>
+    <label><input type="radio" name="sortmode" value="weight_desc" ${state.sortMode==='weight_desc'?'checked':''}> ${t('sortWeightDesc')}</label>
+    <label><input type="radio" name="sortmode" value="weight_asc" ${state.sortMode==='weight_asc'?'checked':''}> ${t('sortWeightAsc')}</label>
+  `;
+  document.querySelectorAll('input[name=sortmode]').forEach(r=>{
+    r.onchange = (e)=>{ state.sortMode = e.target.value; render(); };
+  });
+
+  const langLabels = { uk: "UA", ru: "RU", en: "EN" };
+  document.getElementById('langChips').innerHTML = Object.keys(I18N).map(code =>
+    `<button class="chip ${state.lang===code?'on':''}" data-lang="${code}">${langLabels[code]}</button>`
+  ).join('');
+  document.querySelectorAll('[data-lang]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      state.lang = btn.dataset.lang;
+      await saveLangPref();
+      renderHeaderLabels();
+      renderGenreChips();
+      render();
+    };
+  });
+}
+
+function renderGenreChips(){
+  const wrap = document.getElementById('genreChips');
+  const genres = uniqueGenres();
+  if(genres.length === 0){
+    wrap.innerHTML = `<span class="empty-genres">${t('noGenres')}</span>`;
+    return;
+  }
+  wrap.innerHTML = genres.map(g => `<button class="chip ${state.genreFilter===g?'on':''}" data-genre="${esc(g)}">${esc(g)}</button>`).join('') +
+    `<button class="chip" id="clearGenreChip" style="border-style:dashed;">${t('resetGenre')}</button>`;
+  wrap.querySelectorAll('[data-genre]').forEach(btn=>{
+    btn.onclick = () => {
+      state.genreFilter = (state.genreFilter === btn.dataset.genre) ? null : btn.dataset.genre;
+      renderGenreChips();
+      render();
+    };
+  });
+  const clearBtn = document.getElementById('clearGenreChip');
+  if(clearBtn) clearBtn.onclick = () => { state.genreFilter = null; renderGenreChips(); render(); };
+}
+function updateGenreTag(){
+  document.getElementById('genreCountTag').textContent = state.genreFilter ? ' · ' + state.genreFilter : '';
+}
+
+/* ---------- Views ---------- */
+function renderHome(){
+  const list = filteredSortedGames();
+  const totalInLibrary = games.length;
+  let headNote = '';
+  if(totalInLibrary > 20 && !state.search && !state.genreFilter){
+    headNote = t('shownTop', totalInLibrary);
+  }
+  let body;
+  if(games.length === 0){
+    body = `<div class="empty-state">
+      <div class="display">${t('emptyTitle')}</div>
+      <p>${t('emptyDesc')}</p>
+    </div>`;
+  } else if(list.length === 0){
+    body = `<div class="empty-state">
+      <div class="display">${t('notFoundTitle')}</div>
+      <p>${t('notFoundDesc')}</p>
+    </div>`;
+  } else {
+    body = `<div class="grid">` + list.map((g,i)=>`
+      <a class="card" data-open="${g.id}" href="#">
+        <div class="cover" style="background-image:url('${esc(g.photo)}')">
+          ${state.sortMode==='popular' ? `<div class="rank">#${i+1}</div>` : ''}
+        </div>
+        <div class="card-body">
+          <div class="name">${esc(g.name)}</div>
+          <div class="tag-row">${(g.genres||[]).slice(0,2).map(x=>`<span class="tag">${esc(x)}</span>`).join('')}</div>
+          <div class="weight-line">
+            <span>${(g.weight||0)} GB</span>
+            <span>${(g.platforms||[]).slice(0,3).join(' · ')}</span>
+          </div>
+          <div class="weight-bar"><span style="width:${Math.min(100, ((g.weight||0)/120)*100)}%"></span></div>
+        </div>
+      </a>
+    `).join('') + `</div>`;
+  }
+  mainArea.innerHTML = `
+    <div class="page-head">
+      <h1>${t('catalogTitle')}</h1>
+      <span class="count-tag">${headNote}</span>
+    </div>
+    ${body}
+  `;
+  mainArea.querySelectorAll('[data-open]').forEach(el=>{
+    el.onclick = (e) => { e.preventDefault(); state.view='detail'; state.detailId = el.dataset.open; render(); };
+  });
+}
+
+async function renderDetail(){
+  const g = games.find(x => x.id === state.detailId);
+  if(!g){ state.view='home'; render(); return; }
+  const vote = state.myVotes[g.id] || null;
+  mainArea.innerHTML = `
+    <a href="#" class="back-link" id="backHome">${t('backHome')}</a>
+    <div class="detail">
+      <div class="cover" style="background-image:url('${esc(g.photo)}'); background-size:cover; background-position:center;"></div>
+      <div class="detail-info">
+        <h1>${esc(g.name)}</h1>
+        <div class="tag-row">${(g.genres||[]).map(x=>`<span class="tag">${esc(x)}</span>`).join('')}</div>
+        <p class="desc">${esc(g.description) || t('descNone')}</p>
+        <div class="meta-grid">
+          <div class="meta-item"><div class="label">${t('weightLabel')}</div><div class="value">${(g.weight||0)} GB</div></div>
+          <div class="meta-item"><div class="label">${t('platformsLabel')}</div><div class="value">${(g.platforms||[]).join(', ') || '—'}</div></div>
+        </div>
+        <div class="action-row">
+          <button class="vote-btn ${vote==='like'?'active-like':''}" id="likeBtn">▲ <span id="likeCount">${g.likes||0}</span></button>
+          <button class="vote-btn ${vote==='dislike'?'active-dislike':''}" id="dislikeBtn">▼ <span id="dislikeCount">${g.dislikes||0}</span></button>
+          <a class="dl-btn" id="dlBtn" href="${g.downloadLink ? esc(g.downloadLink) : '#'}" target="_blank" rel="noopener" ${g.downloadLink ? '' : 'disabled'}>${t('downloadBtn')}</a>
+        </div>
+        ${!g.downloadLink ? `<p class="hint">${t('noDownloadHint')}</p>` : ''}
+      </div>
+    </div>
+  `;
+  document.getElementById('backHome').onclick = (e)=>{ e.preventDefault(); state.view='home'; render(); };
+
+  async function castVote(type){
+    // YouTube-style: same button again removes the vote; the other button switches it.
+    try{
+      const r = await apiSend('/api/games/' + g.id + '/vote', 'POST', { voterId: VOTER_ID, type });
+      if(!r.ok){ toast(t('toastSaved')); return; }
+      g.likes = r.data.likes;
+      g.dislikes = r.data.dislikes;
+      if(r.data.vote){ state.myVotes[g.id] = r.data.vote; }
+      else { delete state.myVotes[g.id]; }
+      renderDetail();
+    }catch(e){ toast(t('toastSaved')); }
+  }
+  document.getElementById('likeBtn').onclick = ()=> castVote('like');
+  document.getElementById('dislikeBtn').onclick = ()=> castVote('dislike');
+}
+
+function renderAdmin(){
+  mainArea.innerHTML = `
+    <a href="#" class="back-link" id="backHome2">${t('backHome')}</a>
+    <div class="page-head">
+      <h1>${t('adminTitle')}</h1>
+      <button class="navbtn" id="logoutBtn">${t('logoutBtn')}</button>
+    </div>
+
+    <div class="pw-card">
+      <h4 style="font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px;">${t('pwSectionTitle')}</h4>
+      <div class="pw-row">
+        <div class="field"><label>${t('pwNew')}</label><input type="password" id="pw-new" placeholder="••••••••"></div>
+        <button class="navbtn" id="pwChangeBtn" style="height:42px;">${t('pwChangeBtn')}</button>
+      </div>
+    </div>
+
+    <div class="admin-grid">
+      <div class="form-card">
+        <h3 style="margin-bottom:16px; font-size:16px;">${t('addGame')}</h3>
+        <div class="field"><label>${t('nameLabel')}</label><input type="text" id="f-name" placeholder="${t('namePh')}"></div>
+        <div class="field"><label>${t('weightGbLabel')}</label><input type="number" id="f-weight" min="0" step="0.1" placeholder="45"></div>
+        <div class="field"><label>${t('genresCommaLabel')}</label><input type="text" id="f-genres" placeholder="${t('genresPh')}"></div>
+        <div class="field">
+          <label>${t('platformsFieldLabel')}</label>
+          <div class="platform-grid">
+            ${PLATFORMS.map(p=>`<label><input type="checkbox" value="${p}" class="f-platform"> ${p}</label>`).join('')}
+          </div>
+        </div>
+        <div class="field"><label>${t('photoUrlLabel')}</label><input type="url" id="f-photo" placeholder="https://…"></div>
+        <div class="field"><label>${t('downloadLinkLabel')}</label><input type="url" id="f-dl" placeholder="https://…/file.zip"></div>
+        <div class="field"><label>${t('descriptionLabel')}</label><textarea id="f-desc" placeholder="${t('descPh')}"></textarea></div>
+        <button class="submit-btn" id="submitGame">${t('submitAdd')}</button>
+      </div>
+      <div>
+        <h3 style="margin-bottom:16px; font-size:16px;">${t('existingGames', games.length)}</h3>
+        <div class="admin-list" id="adminList">
+          ${games.length === 0 ? `<p class="hint">${t('emptyList')}</p>` : games.map(g=>`
+            <div class="admin-row">
+              <img src="${esc(g.photo)}" onerror="this.style.opacity=0">
+              <div>
+                <div class="r-name">${esc(g.name)}</div>
+                <div class="r-meta">${g.weight||0} GB · ${(g.genres||[]).join(', ')}</div>
+              </div>
+              <button class="del-btn" data-del="${g.id}">${t('deleteBtn')}</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('backHome2').onclick = (e)=>{ e.preventDefault(); state.view='home'; render(); };
+  document.getElementById('logoutBtn').onclick = ()=>{ state.adminAuthed = false; state.adminPw = null; updateAdminCorner(); state.view='home'; render(); };
+
+  document.getElementById('pwChangeBtn').onclick = async ()=>{
+    const val = document.getElementById('pw-new').value.trim();
+    if(!val){ toast(t('pwEmpty')); return; }
+    const ok = await setAdminPassword(val);
+    if(ok){ state.adminPw = val; toast(t('pwChanged')); document.getElementById('pw-new').value = ''; }
+    else { toast(t('toastSaved')); }
+  };
+
+  document.getElementById('submitGame').onclick = async ()=>{
+    const name = document.getElementById('f-name').value.trim();
+    const weight = parseFloat(document.getElementById('f-weight').value) || 0;
+    const genres = document.getElementById('f-genres').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const platforms = Array.from(document.querySelectorAll('.f-platform:checked')).map(el=>el.value);
+    const photo = document.getElementById('f-photo').value.trim();
+    const downloadLink = document.getElementById('f-dl').value.trim();
+    const description = document.getElementById('f-desc').value.trim();
+    if(!name){ toast(t('toastEnterName')); return; }
+    const r = await apiSend('/api/games', 'POST', { name, weight, genres, platforms, photo, downloadLink, description }, true);
+    if(!r.ok){ toast(t('toastSaved')); return; }
+    await loadGames();
+    toast(t('toastAddedGame'));
+    renderAdmin();
+  };
+
+  mainArea.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const r = await apiSend('/api/games/' + btn.dataset.del, 'DELETE', null, true);
+      if(!r.ok){ toast(t('toastSaved')); return; }
+      await loadGames();
+      renderAdmin();
+    };
+  });
+}
+
+function render(){
+  updateGenreTag();
+  if(state.view === 'home') renderHome();
+  else if(state.view === 'detail') renderDetail();
+  else if(state.view === 'admin') renderAdmin();
+}
+
+/* ---------- Admin password modal ---------- */
+function openPasswordModal(){
+  modalRoot.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-box">
+        <h3>${t('modalTitle')}</h3>
+        <p class="sub">${t('modalSub')}</p>
+        <input type="password" id="pwInput" placeholder="${t('modalPh')}" autofocus>
+        <div class="modal-err" id="pwErr"></div>
+        <div class="modal-actions">
+          <button class="cancel" id="pwCancel">${t('modalCancel')}</button>
+          <button class="confirm" id="pwConfirm">${t('modalConfirm')}</button>
+        </div>
+      </div>
+    </div>
+  `;
+  const overlay = document.getElementById('modalOverlay');
+  const input = document.getElementById('pwInput');
+  const err = document.getElementById('pwErr');
+  input.focus();
+  const close = ()=>{ modalRoot.innerHTML = ''; };
+  document.getElementById('pwCancel').onclick = close;
+  overlay.onclick = (e)=>{ if(e.target === overlay) close(); };
+  const submit = async ()=>{
+    const ok = await adminLogin(input.value);
+    if(ok){
+      state.adminAuthed = true;
+      state.adminPw = input.value;
+      close();
+      state.view = 'admin';
+      updateAdminCorner();
+      render();
+    } else {
+      err.textContent = t('modalWrong');
+      input.value = '';
+      input.focus();
+    }
+  };
+  document.getElementById('pwConfirm').onclick = submit;
+  input.onkeydown = (e)=>{ if(e.key === 'Enter') submit(); };
+}
+
+function updateAdminCorner(){
+  const btn = document.getElementById('adminCorner');
+  btn.classList.toggle('unlocked', state.adminAuthed);
+}
+
+document.getElementById('adminCorner').onclick = ()=>{
+  if(state.adminAuthed){ state.view = 'admin'; render(); }
+  else { openPasswordModal(); }
+};
+
+/* ---------- Header wiring ---------- */
+document.getElementById('logoHome').onclick = ()=>{ state.view='home'; render(); };
+document.getElementById('searchInput').addEventListener('input', (e)=>{ state.search = e.target.value; render(); });
+
+const genreBtn = document.getElementById('genreBtn');
+const genrePanel = document.getElementById('genrePanel');
+genreBtn.onclick = (e)=>{ e.stopPropagation(); genrePanel.classList.toggle('open'); document.getElementById('settingsPanel').classList.remove('open'); };
+
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsPanel = document.getElementById('settingsPanel');
+settingsBtn.onclick = (e)=>{ e.stopPropagation(); settingsPanel.classList.toggle('open'); genrePanel.classList.remove('open'); };
+
+document.addEventListener('click', ()=>{ genrePanel.classList.remove('open'); settingsPanel.classList.remove('open'); });
+genrePanel.onclick = (e)=> e.stopPropagation();
+settingsPanel.onclick = (e)=> e.stopPropagation();
+
+/* ---------- Init ---------- */
+(async function init(){
+  mainArea.innerHTML = `<p class="hint">${t('loading')}</p>`;
+  await Promise.all([loadGames(), loadMyVotes()]);
+  renderHeaderLabels();
+  renderGenreChips();
+  updateAdminCorner();
+  render();
+})();
+</script>
+</body>
+</html>
