@@ -169,12 +169,10 @@ app.post('/api/games/:id/vote', (req, res) => {
   }
 });
 
-// SPA fallback. The uploaded project uses "index (1).html".
+// SPA fallback
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index (1).html'));
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log('Kepka running on port ' + PORT));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('Kepka running on port ' + PORT));
