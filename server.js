@@ -6,7 +6,11 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const DATA_FILE = path.join(__dirname, 'data.json');
+// Если запущено на Render — используем диск /var/data/data.json, иначе локальный файл
+const DATA_FILE = process.env.RENDER
+  ? '/var/data/data.json'
+  : path.join(__dirname, 'data.json');
+
 const DEFAULT_PASSWORD = 'vault2026';
 
 function loadData() {
@@ -170,5 +174,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index (1).html'));
 });
 
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log('Kepka running on port ' + PORT));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('Kepka running on port ' + PORT));
